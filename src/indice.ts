@@ -1,25 +1,12 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  src/index/indice.ts
-//  Responsável por: construção e ordenação do índice via Quick Sort
-// ─────────────────────────────────────────────────────────────────────────────
-
-// TODO: interface EntradaIndice { chave: string; offset: number }
-//       → estrutura de cada entrada do índice (chave + posição no arquivo)
-
-// TODO: construirIndice(caminhoArquivo)
-//       → lê todos os registros e monta o array de EntradaIndice
-
-// TODO: quickSort(arr, esq, dir)
-//       → ordena o índice pela chave usando Quick Sort
+// src/index/indice.ts
 
 import * as fs from 'fs';
-import {
-    TAMANHO_REGISTRO, TAMANHO_NOME, TAMANHO_ENDERECO, bufferFixoParaString } from './generator';
+import { TAMANHO_REGISTRO, TAMANHO_NOME, TAMANHO_ENDERECO, bufferFixoParaString } from './generator';
 
 export type EntradaIndice = {
-    nome: string; // nome 
-    endereco: string; // endereço
-      offset: number; // posição no arquivo
+    nome: string;
+    endereco: string;
+    offset: number;
 }
 
 export function construirIndice(caminhoArquivo: string): EntradaIndice[] {
@@ -46,16 +33,29 @@ export function comparaTexto(a: string, b: string): number {
     return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
 }
 
-function comparaEntrada(a: EntradaIndice, b: EntradaIndice): number {
-    const nomeCmp = comparaTexto(a.nome, b.nome);
-    if (nomeCmp !== 0) return nomeCmp;
-    return comparaTexto(a.endereco, b.endereco);
+// Ordena focando no Nome
+export function comparaPorNome(a: EntradaIndice, b: EntradaIndice): number {
+    const cmp = comparaTexto(a.nome, b.nome);
+    if (cmp !== 0) return cmp;
+    return comparaTexto(a.endereco, b.endereco); // desempate
 }
 
-export function quickSort(arr: EntradaIndice[], esq: number, dir: number): void {
+// Ordena focando no Endereço
+export function comparaPorEndereco(a: EntradaIndice, b: EntradaIndice): number {
+    const cmp = comparaTexto(a.endereco, b.endereco);
+    if (cmp !== 0) return cmp;
+    return comparaTexto(a.nome, b.nome); // desempate
+}
+
+// QuickSort agora recebe a função de comparação dinamicamente
+export function quickSort(
+    arr: EntradaIndice[], 
+    esq: number, 
+    dir: number, 
+    comparaFn: (a: EntradaIndice, b: EntradaIndice) => number
+): void {
     if(esq >= dir) return;
 
-    // Pivô no meio
     const meio = Math.floor((esq + dir) / 2);
     const pivot = arr[meio];
 
@@ -63,16 +63,16 @@ export function quickSort(arr: EntradaIndice[], esq: number, dir: number): void 
     let j = dir;
 
     while (i <= j) {
-        while (comparaEntrada(arr[i], pivot) < 0) i++;
-        while (comparaEntrada(arr[j], pivot) > 0) j--;
+        while (comparaFn(arr[i], pivot) < 0) i++;
+        while (comparaFn(arr[j], pivot) > 0) j--;
 
         if (i <= j) {
-            [arr[i], arr[j]] = [arr[j], arr[i]]; // troca
+            [arr[i], arr[j]] = [arr[j], arr[i]]; 
             i++;
             j--;
         }
     }
 
-    if (esq < j) quickSort(arr, esq, j);
-    if (i < dir) quickSort(arr, i, dir);
+    if (esq < j) quickSort(arr, esq, j, comparaFn);
+    if (i < dir) quickSort(arr, i, dir, comparaFn);
 }
