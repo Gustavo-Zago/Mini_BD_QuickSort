@@ -39,15 +39,15 @@ async function main() {
 
     for (let i = 0; i < N; i++) {
       lote.push(gerarRegistro());
-      
+
       if (lote.length === LOTE) {
         gravarLote(CAMINHO_ARQUIVO, lote);
         lote.length = 0;
-        
+
         // Log de progresso a cada 100.000 registos para não achar que travou
         if ((i + 1) % 100000 === 0) {
-            const percentual = percentualConcluido(i + 1, N);
-            console.log(`Progresso: ${i + 1} de ${N} registos gravados (${percentual.toFixed(1)}%).`);
+          const percentual = percentualConcluido(i + 1, N);
+          console.log(`Progresso: ${i + 1} de ${N} registos gravados (${percentual.toFixed(1)}%).`);
         }
       }
     }
@@ -102,17 +102,65 @@ async function main() {
 
   // 3. DEMONSTRAÇÃO DE BUSCA PARA O EXERCÍCIO
   console.log('\n--- Demonstração de Buscas Rápidas ---');
-  
+
   // Buscar no índice de Nomes
   const resultadoNomes = buscaParcial(indiceNome, 'Maria', 'nome');
   console.log(`\nEncontradas ${resultadoNomes.length} pessoas chamadas Maria. Exemplo das 3 primeiras:`);
   console.log(resultadoNomes.slice(0, 3));
 
   // Buscar no índice de Endereços
-// Buscar no índice de Endereços
+  // Buscar no índice de Endereços
   const resultadoRuas = buscaParcial(indiceEndereco, 'Carvalho', 'endereco');
   console.log(`\nEncontradas ${resultadoRuas.length} pessoas morando em endereços que começam com Carvalho. Exemplo das 3 primeiras:`);
   console.log(resultadoRuas.slice(0, 3));
+
+  // Busca exata com endereços completos conhecidos
+  const enderecoExato = [
+    {
+      endereco: 'Albuquerque Alameda, 156, Breno do Norte, São Paulo, CEP: 83287-879',
+    },
+    {
+      endereco: 'Albuquerque Alameda, 1711, Davi do Descoberto, Minas Gerais, CEP: 86927-698',
+    },
+    {
+      endereco: 'Albuquerque Alameda, 2510, Costa do Norte, Amazonas, CEP: 39875-494',
+    },
+  ];
+
+  const resultadosExatos = enderecoExato.map((entrada) => {
+    const offsetEncontrado = buscaExata(indiceEndereco, entrada.endereco, 'endereco');
+    return offsetEncontrado >= 0
+      ? mapa.get(offsetEncontrado) ?? { ...entrada, offset: offsetEncontrado }
+      : { ...entrada, offset: offsetEncontrado };
+  });
+
+  console.log('\nBusca exata por endereços completos. Resultados encontrados:');
+  console.log(resultadosExatos);
+
+  // Nome exato para teste de busca exata no índice de nomes
+
+  const nomeExato = [
+    {
+      nome: 'Isabelly Braga',
+    },
+    {
+      nome: 'Lavínia Moraes',
+    },
+    {
+      nome: 'Fabrícia Silva',
+    },
+  ];
+
+  const nomesExatos = nomeExato.map((entrada) => {
+    const offsetEncontrado = buscaExata(indiceNome, entrada.nome, 'nome');
+    return offsetEncontrado >= 0
+      ? mapa.get(offsetEncontrado) ?? { ...entrada, offset: offsetEncontrado }
+      : { ...entrada, offset: offsetEncontrado };
+  });
+
+  console.log('\nBusca exata por nomes completos. Resultados encontrados:');
+  console.log(nomesExatos);
+
 }
 
 main().catch(console.error);
