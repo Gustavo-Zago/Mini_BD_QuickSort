@@ -39,15 +39,15 @@ async function main() {
 
     for (let i = 0; i < N; i++) {
       lote.push(gerarRegistro());
-
+      
       if (lote.length === LOTE) {
         gravarLote(CAMINHO_ARQUIVO, lote);
         lote.length = 0;
-
+        
         // Log de progresso a cada 100.000 registos para não achar que travou
         if ((i + 1) % 100000 === 0) {
-          const percentual = percentualConcluido(i + 1, N);
-          console.log(`Progresso: ${i + 1} de ${N} registos gravados (${percentual.toFixed(1)}%).`);
+            const percentual = percentualConcluido(i + 1, N);
+            console.log(`Progresso: ${i + 1} de ${N} registos gravados (${percentual.toFixed(1)}%).`);
         }
       }
     }
@@ -102,14 +102,14 @@ async function main() {
 
   // 3. DEMONSTRAÇÃO DE BUSCA PARA O EXERCÍCIO
   console.log('\n--- Demonstração de Buscas Rápidas ---');
-
+  
   // Buscar no índice de Nomes
   const resultadoNomes = buscaParcial(indiceNome, 'Maria', 'nome');
   console.log(`\nEncontradas ${resultadoNomes.length} pessoas chamadas Maria. Exemplo das 3 primeiras:`);
   console.log(resultadoNomes.slice(0, 3));
 
   // Buscar no índice de Endereços
-  // Buscar no índice de Endereços
+// Buscar no índice de Endereços
   const resultadoRuas = buscaParcial(indiceEndereco, 'Carvalho', 'endereco');
   console.log(`\nEncontradas ${resultadoRuas.length} pessoas morando em endereços que começam com Carvalho. Exemplo das 3 primeiras:`);
   console.log(resultadoRuas.slice(0, 3));
