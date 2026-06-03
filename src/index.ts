@@ -3,12 +3,20 @@
 import * as fs from 'fs';
 import { gerarRegistro } from './generator';
 import { gravarLote, totalRegistros } from './arquivo';
-import { construirIndice, quickSort, salvarIndiceOrdenado, carregarIndiceOrdenado, comparaPorNome, comparaPorEndereco } from './indice';
+import {
+  construirIndice,
+  quickSort,
+  salvarIndicesOrdenados,
+  carregarIndicesOrdenados,
+  comparaPorNome,
+  comparaPorEndereco,
+  estaOrdenado,
+  percentualConcluido,
+} from './indice';
 import { buscaExata, buscaParcial } from './busca';
 
 const CAMINHO_ARQUIVO = 'dados.bin';
-const CAMINHO_INDICE_NOMES = 'indice_nomes.bin';
-const CAMINHO_INDICE_ENDERECOS = 'indice_enderecos.bin';
+const CAMINHO_INDICE = 'indice.bin';
 const N = 10000000; // 10 milhões conforme enunciado
 const LOTE = 10000;
 const RESET_ARQUIVO = false;
@@ -38,7 +46,8 @@ async function main() {
         
         // Log de progresso a cada 100.000 registos para não achar que travou
         if ((i + 1) % 100000 === 0) {
-            console.log(`Progresso: ${i + 1} de ${N} registos gravados...`);
+            const percentual = percentualConcluido(i + 1, N);
+            console.log(`Progresso: ${i + 1} de ${N} registos gravados (${percentual.toFixed(1)}%).`);
         }
       }
     }
@@ -50,35 +59,43 @@ async function main() {
 
   // 2. CONSTRUÇÃO E ORDENAÇÃO DOS ÍNDICES
   console.log('A ler o disco e a construir o índice base...');
-  const indiceBase = construirIndice(CAMINHO_ARQUIVO);
+  const indiceBase = construirIndice(CAMINHO_ARQUIVO, (percentual, lidos, total) => {
+    console.log(`Progresso do índice: ${lidos} de ${total} registros lidos (${percentual.toFixed(1)}%).`);
+  });
 
   const mapa = new Map<number, import('./indice').EntradaIndice>();
   for (const entrada of indiceBase) {
     mapa.set(entrada.offset, entrada);
   }
 
-  console.log('A preparar o Índice de NOMES...');
-  let indiceNome = carregarIndiceOrdenado(CAMINHO_INDICE_NOMES, mapa, indiceBase.length);
-  if (indiceNome) {
-    console.log('Índice de NOMES carregado do disco (ordenação ignorada).');
+  console.log('A preparar os índices...');
+  const indicesCarregados = carregarIndicesOrdenados(CAMINHO_INDICE, mapa, indiceBase.length);
+
+  let indiceNome: import('./indice').EntradaIndice[];
+  let indiceEndereco: import('./indice').EntradaIndice[];
+
+  if (indicesCarregados) {
+    indiceNome = indicesCarregados.nome;
+    indiceEndereco = indicesCarregados.endereco;
+    console.log('Índices carregados do mesmo arquivo binário.');
   } else {
     console.log('Ordenando o Índice de NOMES com Quick Sort...');
     indiceNome = [...indiceBase];
-    quickSort(indiceNome, 0, indiceNome.length - 1, comparaPorNome);
-    salvarIndiceOrdenado(CAMINHO_INDICE_NOMES, indiceNome);
-    console.log('Índice de NOMES salvo em disco.');
-  }
+    quickSort(indiceNome, 0, indiceNome.length - 1, comparaPorNome, (percentual) => {
+      process.stdout.write(`\rQuicksort NOMES: ${percentual.toFixed(1)}%`);
+    });
+    console.log('\n');
 
-  console.log('A preparar o Índice de ENDEREÇOS...');
-  let indiceEndereco = carregarIndiceOrdenado(CAMINHO_INDICE_ENDERECOS, mapa, indiceBase.length);
-  if (indiceEndereco) {
-    console.log('Índice de ENDEREÇOS carregado do disco (ordenação ignorada).');
-  } else {
     console.log('Ordenando o Índice de ENDEREÇOS com Quick Sort...');
     indiceEndereco = [...indiceBase];
-    quickSort(indiceEndereco, 0, indiceEndereco.length - 1, comparaPorEndereco);
-    salvarIndiceOrdenado(CAMINHO_INDICE_ENDERECOS, indiceEndereco);
-    console.log('Índice de ENDEREÇOS salvo em disco.');
+    quickSort(indiceEndereco, 0, indiceEndereco.length - 1, comparaPorEndereco, (percentual) => {
+      process.stdout.write(`\rQuicksort ENDEREÇOS: ${percentual.toFixed(1)}%`);
+    });
+    console.log('\n');
+
+    salvarIndicesOrdenados(CAMINHO_INDICE, indiceNome, indiceEndereco);
+    console.log(`Índices salvos em um único arquivo. NOMES ordenado? ${estaOrdenado(indiceNome, comparaPorNome) ? 'SIM' : 'NÃO'}`);
+    console.log(`ENDEREÇOS ordenado? ${estaOrdenado(indiceEndereco, comparaPorEndereco) ? 'SIM' : 'NÃO'}`);
   }
 
   console.log(`Concluído! Índices em memória com ${indiceNome.length} entradas.`);
