@@ -1,0 +1,5 @@
+node_modules/
+dist/
+dados.bin
+indice_nomes.bin
+indice_enderecos.bin

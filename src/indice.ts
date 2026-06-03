@@ -47,6 +47,43 @@ export function comparaPorEndereco(a: EntradaIndice, b: EntradaIndice): number {
     return comparaTexto(a.nome, b.nome); // desempate
 }
 
+export function salvarIndiceOrdenado(caminhoIndice: string, indice: EntradaIndice[]): void {
+    const buffer = Buffer.allocUnsafe(4 + indice.length * 4);
+    buffer.writeUInt32LE(indice.length, 0);
+    for (let i = 0; i < indice.length; i++) {
+        buffer.writeUInt32LE(indice[i].offset, 4 + i * 4);
+    }
+    fs.writeFileSync(caminhoIndice, buffer);
+}
+
+export function carregarIndiceOrdenado(
+    caminhoIndice: string,
+    mapa: Map<number, EntradaIndice>,
+    totalEsperado: number
+): EntradaIndice[] | null {
+    if (!fs.existsSync(caminhoIndice)) return null;
+    const buffer = fs.readFileSync(caminhoIndice);
+    const total = buffer.readUInt32LE(0);
+    if (total !== totalEsperado) return null;
+    const indice: EntradaIndice[] = [];
+    for (let i = 0; i < total; i++) {
+        const offset = buffer.readUInt32LE(4 + i * 4);
+        const entrada = mapa.get(offset);
+        if (entrada) indice.push(entrada);
+    }
+    return indice;
+}
+
+export function estaOrdenado(
+    arr: EntradaIndice[],
+    comparaFn: (a: EntradaIndice, b: EntradaIndice) => number
+): boolean {
+    for (let i = 1; i < arr.length; i++) {
+        if (comparaFn(arr[i - 1], arr[i]) > 0) return false;
+    }
+    return true;
+}
+
 // QuickSort agora recebe a função de comparação dinamicamente
 export function quickSort(
     arr: EntradaIndice[], 

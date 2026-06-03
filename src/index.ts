@@ -3,12 +3,14 @@
 import * as fs from 'fs';
 import { gerarRegistro } from './generator';
 import { gravarLote, totalRegistros } from './arquivo';
-import { construirIndice, quickSort, comparaPorNome, comparaPorEndereco } from './indice';
+import { construirIndice, quickSort, salvarIndiceOrdenado, carregarIndiceOrdenado, comparaPorNome, comparaPorEndereco } from './indice';
 import { buscaExata, buscaParcial } from './busca';
 
 const CAMINHO_ARQUIVO = 'dados.bin';
+const CAMINHO_INDICE_NOMES = 'indice_nomes.bin';
+const CAMINHO_INDICE_ENDERECOS = 'indice_enderecos.bin';
 const N = 10000000; // 10 milhões conforme enunciado
-const LOTE = 10000; // Aumentei o lote para acelerar a gravação no disco
+const LOTE = 10000;
 const RESET_ARQUIVO = false;
 
 function resetArquivo(caminho: string): void {
@@ -50,13 +52,34 @@ async function main() {
   console.log('A ler o disco e a construir o índice base...');
   const indiceBase = construirIndice(CAMINHO_ARQUIVO);
 
-  console.log('A criar e ordenar o Índice de NOMES (Quick Sort)...');
-  const indiceNome = [...indiceBase]; // Faz uma cópia da lista
-  quickSort(indiceNome, 0, indiceNome.length - 1, comparaPorNome);
+  const mapa = new Map<number, import('./indice').EntradaIndice>();
+  for (const entrada of indiceBase) {
+    mapa.set(entrada.offset, entrada);
+  }
 
-  console.log('A criar e ordenar o Índice de ENDEREÇOS (Quick Sort)...');
-  const indiceEndereco = [...indiceBase]; // Faz uma cópia da lista
-  quickSort(indiceEndereco, 0, indiceEndereco.length - 1, comparaPorEndereco);
+  console.log('A preparar o Índice de NOMES...');
+  let indiceNome = carregarIndiceOrdenado(CAMINHO_INDICE_NOMES, mapa, indiceBase.length);
+  if (indiceNome) {
+    console.log('Índice de NOMES carregado do disco (ordenação ignorada).');
+  } else {
+    console.log('Ordenando o Índice de NOMES com Quick Sort...');
+    indiceNome = [...indiceBase];
+    quickSort(indiceNome, 0, indiceNome.length - 1, comparaPorNome);
+    salvarIndiceOrdenado(CAMINHO_INDICE_NOMES, indiceNome);
+    console.log('Índice de NOMES salvo em disco.');
+  }
+
+  console.log('A preparar o Índice de ENDEREÇOS...');
+  let indiceEndereco = carregarIndiceOrdenado(CAMINHO_INDICE_ENDERECOS, mapa, indiceBase.length);
+  if (indiceEndereco) {
+    console.log('Índice de ENDEREÇOS carregado do disco (ordenação ignorada).');
+  } else {
+    console.log('Ordenando o Índice de ENDEREÇOS com Quick Sort...');
+    indiceEndereco = [...indiceBase];
+    quickSort(indiceEndereco, 0, indiceEndereco.length - 1, comparaPorEndereco);
+    salvarIndiceOrdenado(CAMINHO_INDICE_ENDERECOS, indiceEndereco);
+    console.log('Índice de ENDEREÇOS salvo em disco.');
+  }
 
   console.log(`Concluído! Índices em memória com ${indiceNome.length} entradas.`);
 
