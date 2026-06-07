@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "node --max-old-space-size=10240 -r ts-node/register src/index.ts"
+    "dev": "node --max-old-space-size=10240 -r ts-node/register src/index.ts",
+    "server": "node --max-old-space-size=10240 -r ts-node/register src/server.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",

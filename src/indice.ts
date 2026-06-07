@@ -1,4 +1,4 @@
-// src/index/indice.ts
+// src/indice.ts
 
 /// <reference types="node" />
 import * as fs from 'fs';
@@ -27,10 +27,8 @@ export function construirIndice(
     for (let i = 0; i < totalRegistros; i++) {
         const buffer = Buffer.alloc(TAMANHO_REGISTRO);
         fs.readSync(fd, buffer, 0, TAMANHO_REGISTRO, i * TAMANHO_REGISTRO);
-        const nomeBuffer = buffer.subarray(0, TAMANHO_NOME);
-        const enderecoBuffer = buffer.subarray(TAMANHO_NOME, TAMANHO_NOME + TAMANHO_ENDERECO);
-        const endereco = bufferFixoParaString(enderecoBuffer);
-        const nome = bufferFixoParaString(nomeBuffer);
+        const nome = bufferFixoParaString(buffer.subarray(0, TAMANHO_NOME));
+        const endereco = bufferFixoParaString(buffer.subarray(TAMANHO_NOME, TAMANHO_NOME + TAMANHO_ENDERECO));
         indice.push({ nome, endereco, offset: i * TAMANHO_REGISTRO });
 
         if (onProgress && (i + 1) % 100000 === 0) {
@@ -47,18 +45,16 @@ export function comparaTexto(a: string, b: string): number {
     return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
 }
 
-// Ordena focando no Nome
 export function comparaPorNome(a: EntradaIndice, b: EntradaIndice): number {
     const cmp = comparaTexto(a.nome, b.nome);
     if (cmp !== 0) return cmp;
-    return comparaTexto(a.endereco, b.endereco); // desempate
+    return comparaTexto(a.endereco, b.endereco);
 }
 
-// Ordena focando no Endereço
 export function comparaPorEndereco(a: EntradaIndice, b: EntradaIndice): number {
     const cmp = comparaTexto(a.endereco, b.endereco);
     if (cmp !== 0) return cmp;
-    return comparaTexto(a.nome, b.nome); // desempate
+    return comparaTexto(a.nome, b.nome);
 }
 
 export function salvarIndicesOrdenados(
@@ -116,18 +112,15 @@ export function estaOrdenado(
     return true;
 }
 
-// QuickSort agora recebe a função de comparação dinamicamente
 export function quickSort(
-    arr: EntradaIndice[], 
-    esq: number, 
-    dir: number, 
+    arr: EntradaIndice[],
+    esq: number,
+    dir: number,
     comparaFn: (a: EntradaIndice, b: EntradaIndice) => number,
-    onProgress?: (percentual: number, etapa: string) => void
+    onProgress?: (percentual: number) => void
 ): void {
-    const estado = {
-        comparacoes: 0,
-        estimativaTotal: Math.max(1, arr.length * Math.ceil(Math.log2(arr.length + 1))),
-    };
+    const estimativaTotal = Math.max(1, arr.length * Math.ceil(Math.log2(arr.length + 1)));
+    let comparacoes = 0;
 
     function ordenar(inicio: number, fim: number): void {
         if (inicio >= fim) return;
@@ -138,26 +131,19 @@ export function quickSort(
         let j = fim;
 
         while (i <= j) {
-            estado.comparacoes++;
-            while (comparaFn(arr[i], pivot) < 0) {
-                estado.comparacoes++;
-                i++;
-            }
-            while (comparaFn(arr[j], pivot) > 0) {
-                estado.comparacoes++;
-                j--;
-            }
+            comparacoes++;
+            while (comparaFn(arr[i], pivot) < 0) { comparacoes++; i++; }
+            while (comparaFn(arr[j], pivot) > 0) { comparacoes++; j--; }
 
             if (i <= j) {
                 [arr[i], arr[j]] = [arr[j], arr[i]];
                 i++;
                 j--;
             }
+        }
 
-            if (onProgress) {
-                const percentual = Math.min(99.9, (estado.comparacoes / estado.estimativaTotal) * 100);
-                onProgress(percentual, 'particionando');
-            }
+        if (onProgress && comparacoes % 1000000 === 0) {
+            onProgress(Math.min(99.9, (comparacoes / estimativaTotal) * 100));
         }
 
         if (inicio < j) ordenar(inicio, j);
@@ -165,4 +151,5 @@ export function quickSort(
     }
 
     ordenar(esq, dir);
+    if (onProgress) onProgress(100);
 }

@@ -2,3 +2,5 @@ node_modules/
 dist/
 dados.bin
 indice.bin
+dados.zip
+indice.zip
