@@ -1,14 +1,7 @@
-// src/indice.ts
-
-/// <reference types="node" />
 import * as fs from 'fs';
-import { TAMANHO_REGISTRO, TAMANHO_NOME, TAMANHO_ENDERECO, bufferFixoParaString } from './generator';
-
-export type EntradaIndice = {
-    nome: string;
-    endereco: string;
-    offset: number;
-}
+import { TAMANHO_REGISTRO, TAMANHO_NOME, TAMANHO_ENDERECO } from '../config';
+import { EntradaIndice } from '../types';
+import { bufferFixoParaString } from '../utils/generator';
 
 export function percentualConcluido(atual: number, total: number): number {
     if (total <= 0) return 100;
@@ -110,46 +103,4 @@ export function estaOrdenado(
         if (comparaFn(arr[i - 1], arr[i]) > 0) return false;
     }
     return true;
-}
-
-export function quickSort(
-    arr: EntradaIndice[],
-    esq: number,
-    dir: number,
-    comparaFn: (a: EntradaIndice, b: EntradaIndice) => number,
-    onProgress?: (percentual: number) => void
-): void {
-    const estimativaTotal = Math.max(1, arr.length * Math.ceil(Math.log2(arr.length + 1)));
-    let comparacoes = 0;
-
-    function ordenar(inicio: number, fim: number): void {
-        if (inicio >= fim) return;
-
-        const meio = Math.floor((inicio + fim) / 2);
-        const pivot = arr[meio];
-        let i = inicio;
-        let j = fim;
-
-        while (i <= j) {
-            comparacoes++;
-            while (comparaFn(arr[i], pivot) < 0) { comparacoes++; i++; }
-            while (comparaFn(arr[j], pivot) > 0) { comparacoes++; j--; }
-
-            if (i <= j) {
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-                i++;
-                j--;
-            }
-        }
-
-        if (onProgress && comparacoes % 1000000 === 0) {
-            onProgress(Math.min(99.9, (comparacoes / estimativaTotal) * 100));
-        }
-
-        if (inicio < j) ordenar(inicio, j);
-        if (i < fim) ordenar(i, fim);
-    }
-
-    ordenar(esq, dir);
-    if (onProgress) onProgress(100);
 }

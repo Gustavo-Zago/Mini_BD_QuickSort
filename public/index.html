@@ -1,399 +1,46 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mini BD — Busca Binária</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:       #0f1117;
-      --surface:  #1a1d27;
-      --border:   #2a2d3e;
-      --accent:   #6c63ff;
-      --accent2:  #a78bfa;
-      --text:     #e2e8f0;
-      --muted:    #64748b;
-      --green:    #22c55e;
-      --red:      #ef4444;
-      --yellow:   #f59e0b;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem 1rem 4rem;
-    }
-
-    header {
-      width: 100%;
-      max-width: 860px;
-      margin-bottom: 2.5rem;
-      text-align: center;
-    }
-
-    header h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -0.5px;
-    }
-
-    header p {
-      color: var(--muted);
-      margin-top: .5rem;
-      font-size: .95rem;
-    }
-
-    /* Status bar */
-    #status-bar {
-      display: flex;
-      align-items: center;
-      gap: .5rem;
-      font-size: .82rem;
-      color: var(--muted);
-      margin-top: .75rem;
-      justify-content: center;
-    }
-
-    .dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--yellow);
-      animation: pulse 1.2s ease-in-out infinite;
-    }
-    .dot.ok   { background: var(--green); animation: none; }
-    .dot.err  { background: var(--red);   animation: none; }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: .3; }
-    }
-
-    /* Search card */
-    .card {
-      width: 100%;
-      max-width: 860px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 1.75rem;
-    }
-
-    .search-row {
-      display: flex;
-      gap: .75rem;
-      align-items: stretch;
-    }
-
-    #input-busca {
-      flex: 1;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      font-size: 1rem;
-      padding: .75rem 1rem;
-      outline: none;
-      transition: border-color .2s;
-    }
-    #input-busca:focus { border-color: var(--accent); }
-    #input-busca::placeholder { color: var(--muted); }
-
-    .controls {
-      display: flex;
-      gap: .5rem;
-      flex-shrink: 0;
-    }
-
-    select, button {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      font-size: .88rem;
-      padding: .6rem .9rem;
-      cursor: pointer;
-      outline: none;
-      transition: border-color .2s, background .2s;
-    }
-    select:focus, button:focus { border-color: var(--accent); }
-
-    #btn-buscar {
-      background: var(--accent);
-      border-color: var(--accent);
-      font-weight: 600;
-      padding: .6rem 1.4rem;
-      color: #fff;
-    }
-    #btn-buscar:hover { background: var(--accent2); border-color: var(--accent2); }
-    #btn-buscar:disabled { opacity: .5; cursor: not-allowed; }
-
-    /* Meta linha */
-    #meta {
-      margin-top: 1rem;
-      font-size: .82rem;
-      color: var(--muted);
-      min-height: 1.2rem;
-    }
-    #meta span { color: var(--accent2); font-weight: 600; }
-
-    /* Tabela de resultados */
-    #tabela-wrap {
-      margin-top: 1.25rem;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: .88rem;
-    }
-
-    thead th {
-      background: var(--bg);
-      color: var(--muted);
-      font-weight: 600;
-      text-align: left;
-      padding: .6rem 1rem;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-      transition: background .15s;
-    }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: rgba(108, 99, 255, .07); }
-
-    tbody td {
-      padding: .65rem 1rem;
-      vertical-align: top;
-    }
-
-    .td-nome     { font-weight: 500; color: var(--text); white-space: nowrap; }
-    .td-endereco { color: var(--muted); }
-    .td-offset   { color: var(--muted); font-family: monospace; font-size: .78rem; white-space: nowrap; }
-
-    .highlight { color: var(--accent2); font-weight: 700; }
-
-    /* Aviso de truncado */
-    .aviso-truncado {
-      margin-top: .75rem;
-      font-size: .8rem;
-      color: var(--yellow);
-      text-align: center;
-    }
-
-    /* Empty / error states */
-    .state-box {
-      text-align: center;
-      padding: 2.5rem 1rem;
-      color: var(--muted);
-    }
-    .state-box .icon { font-size: 2.5rem; margin-bottom: .5rem; }
-    .state-box .msg  { font-size: .92rem; }
-
-    /* Spinner */
-    .spinner {
-      width: 22px; height: 22px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      display: inline-block;
-      vertical-align: middle;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
+  <title>Mini BD — Busca Binary</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
-<header>
-  <h1>Mini BD — Busca Binária</h1>
-  <p>10 milhões de registros · índice QuickSort · busca em O(log n)</p>
-  <div id="status-bar">
-    <div class="dot" id="dot"></div>
-    <span id="status-txt">Conectando ao servidor...</span>
-  </div>
-</header>
-
-<div class="card">
-  <div class="search-row">
-    <input
-      id="input-busca"
-      type="text"
-      placeholder="Digite nome ou endereço para pesquisar..."
-      autocomplete="off"
-      spellcheck="false"
-    />
-    <div class="controls">
-      <select id="sel-campo" title="Campo de busca">
-        <option value="nome">Nome</option>
-        <option value="endereco">Endereço</option>
-      </select>
-      <select id="sel-tipo" title="Tipo de busca">
-        <option value="parcial">Prefixo</option>
-        <option value="exata">Exata</option>
-      </select>
-      <button id="btn-buscar">Buscar</button>
+  <header>
+    <h1>Mini BD — Busca Binária</h1>
+    <p>10 milhões de registros · índice QuickSort · busca em O(log n)</p>
+    <div id="status-bar">
+      <div class="dot" id="dot"></div>
+      <span id="status-txt">Conectando ao servidor...</span>
     </div>
+  </header>
+
+  <div class="card">
+    <div class="search-row">
+      <input id="input-busca" type="text" placeholder="Digite nome ou endereço para pesquisar..." autocomplete="off"
+        spellcheck="false" />
+      <div class="controls">
+        <select id="sel-campo" title="Campo de busca">
+          <option value="nome">Nome</option>
+          <option value="endereco">Endereço</option>
+        </select>
+        <select id="sel-tipo" title="Tipo de busca">
+          <option value="parcial">Prefixo</option>
+          <option value="exata">Exata</option>
+        </select>
+        <button id="btn-buscar">Buscar</button>
+      </div>
+    </div>
+
+    <div id="meta"></div>
+    <div id="tabela-wrap"></div>
   </div>
 
-  <div id="meta"></div>
-  <div id="tabela-wrap"></div>
-</div>
-
-<script>
-  const API = '';   // mesmo origin; troque por 'http://localhost:3000' se rodar separado
-
-  const inputBusca = document.getElementById('input-busca');
-  const selCampo   = document.getElementById('sel-campo');
-  const selTipo    = document.getElementById('sel-tipo');
-  const btnBuscar  = document.getElementById('btn-buscar');
-  const metaDiv    = document.getElementById('meta');
-  const tabelaWrap = document.getElementById('tabela-wrap');
-  const dot        = document.getElementById('dot');
-  const statusTxt  = document.getElementById('status-txt');
-
-  let servidorPronto = false;
-  let debounceTimer  = null;
-
-  // ── Status polling ──────────────────────────────────────────────────────────
-  async function verificarStatus() {
-    try {
-      const r = await fetch(API + '/status');
-      const d = await r.json();
-      if (d.pronto) {
-        dot.className = 'dot ok';
-        statusTxt.textContent = `Pronto · ${d.registros.toLocaleString('pt-BR')} registros carregados`;
-        servidorPronto = true;
-        btnBuscar.disabled = false;
-      } else if (d.erro) {
-        dot.className = 'dot err';
-        statusTxt.textContent = 'Erro: ' + d.erro;
-      } else {
-        setTimeout(verificarStatus, 1500);
-      }
-    } catch {
-      dot.className = 'dot err';
-      statusTxt.textContent = 'Servidor inacessível — verifique se está rodando.';
-      setTimeout(verificarStatus, 3000);
-    }
-  }
-
-  // ── Busca ───────────────────────────────────────────────────────────────────
-  async function buscar() {
-    const q     = inputBusca.value.trim();
-    const campo = selCampo.value;
-    const tipo  = selTipo.value;
-
-    if (!q) {
-      tabelaWrap.innerHTML = '';
-      metaDiv.innerHTML = '';
-      return;
-    }
-    if (!servidorPronto) return;
-
-    metaDiv.innerHTML = '<span class="spinner"></span>';
-    tabelaWrap.innerHTML = '';
-
-    try {
-      const params = new URLSearchParams({ q, campo, tipo });
-      const r = await fetch(`${API}/busca?${params}`);
-      const d = await r.json();
-
-      if (!r.ok) {
-        metaDiv.innerHTML = `<span style="color:var(--red)">Erro: ${d.erro}</span>`;
-        return;
-      }
-
-      metaDiv.innerHTML = `
-        Encontrados <span>${d.total.toLocaleString('pt-BR')}</span> resultado(s)
-        em <span>${d.tempoMs} ms</span>
-        ${d.truncado ? '· <span style="color:var(--yellow)">exibindo primeiros 200</span>' : ''}
-      `;
-
-      if (d.resultados.length === 0) {
-        tabelaWrap.innerHTML = `
-          <div class="state-box">
-            <div class="icon">🔍</div>
-            <div class="msg">Nenhum resultado para "<strong>${esc(q)}</strong>"</div>
-          </div>`;
-        return;
-      }
-
-      const ql = q.toLowerCase();
-      const rows = d.resultados.map(item => {
-        const nomeHl  = campo === 'nome'     ? realcar(item.nome,     ql) : esc(item.nome);
-        const endHl   = campo === 'endereco' ? realcar(item.endereco, ql) : esc(item.endereco);
-        return `
-          <tr>
-            <td class="td-nome">${nomeHl}</td>
-            <td class="td-endereco">${endHl}</td>
-            <td class="td-offset">${item.offset}</td>
-          </tr>`;
-      }).join('');
-
-      tabelaWrap.innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Endereço</th>
-              <th>Offset</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-        ${d.truncado ? '<div class="aviso-truncado">⚠ Lista truncada em 200 registros. Use um termo mais específico.</div>' : ''}
-      `;
-    } catch (e) {
-      metaDiv.innerHTML = `<span style="color:var(--red)">Falha na requisição: ${e.message}</span>`;
-    }
-  }
-
-  function esc(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-
-  function realcar(texto, prefixo) {
-    const t = esc(texto);
-    const idx = t.toLowerCase().indexOf(prefixo.toLowerCase());
-    if (idx < 0) return t;
-    return t.slice(0, idx)
-      + `<mark class="highlight">${t.slice(idx, idx + prefixo.length)}</mark>`
-      + t.slice(idx + prefixo.length);
-  }
-
-  // ── Eventos ─────────────────────────────────────────────────────────────────
-  inputBusca.addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(buscar, 280);
-  });
-
-  inputBusca.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { clearTimeout(debounceTimer); buscar(); }
-  });
-
-  btnBuscar.addEventListener('click', () => { clearTimeout(debounceTimer); buscar(); });
-
-  selCampo.addEventListener('change', () => { if (inputBusca.value.trim()) buscar(); });
-  selTipo.addEventListener('change',  () => { if (inputBusca.value.trim()) buscar(); });
-
-  // ── Boot ────────────────────────────────────────────────────────────────────
-  btnBuscar.disabled = true;
-  verificarStatus();
-</script>
+  <script src="app.js"></script>
 </body>
+
 </html>

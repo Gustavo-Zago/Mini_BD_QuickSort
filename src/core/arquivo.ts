@@ -1,33 +1,7 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  src/data/arquivo.ts
-//  Responsável por: leitura e gravação no arquivo sequencial (dados.bin)
-// ─────────────────────────────────────────────────────────────────────────────
-
-// TODO: gravarRegistro(caminhoArquivo, registro)
-//       → grava um registro de 300 bytes no final do arquivo
-
-// TODO: gravarLote(caminhoArquivo, registros[])
-//       → grava um lote de registros de uma vez (mais eficiente para 10 milhões)
-
-// TODO: lerRegistro(caminhoArquivo, offset)
-//       → lê um registro a partir de uma posição (offset) no arquivo
-
-// TODO: totalRegistros(caminhoArquivo)
-//       → retorna quantos registros existem no arquivo
-
 import * as fs from 'fs';
-import {
-      TAMANHO_REGISTRO,
-      TAMANHO_NOME,
-      TAMANHO_ENDERECO,
-      stringParaBufferFixo,
-      bufferFixoParaString,
-} from './generator';
-
-type Registro = {
-      nome: string;
-      endereco: string;
-};
+import { TAMANHO_REGISTRO, TAMANHO_NOME, TAMANHO_ENDERECO } from '../config';
+import { Registro } from '../types';
+import { stringParaBufferFixo, bufferFixoParaString } from '../utils/generator';
 
 function registroParaBuffer(registro: Registro): Buffer {
       const bufNome = stringParaBufferFixo(registro.nome, TAMANHO_NOME);

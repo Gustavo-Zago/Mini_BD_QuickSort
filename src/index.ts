@@ -1,25 +1,21 @@
-// index.ts
+// src/index.ts
 
 import * as fs from 'fs';
-import { gerarRegistro } from './generator';
-import { gravarLote, totalRegistros } from './arquivo';
+import { CAMINHO_ARQUIVO, CAMINHO_INDICE, N_REGISTROS, LOTE_TAMANHO, RESET_ARQUIVO } from './config';
+import { EntradaIndice, Registro } from './types';
+import { gerarRegistro } from './utils/generator';
+import { quickSort } from './utils/quicksort';
+import { gravarLote, totalRegistros } from './core/arquivo';
 import {
   construirIndice,
-  quickSort,
   salvarIndicesOrdenados,
   carregarIndicesOrdenados,
   comparaPorNome,
   comparaPorEndereco,
   estaOrdenado,
   percentualConcluido,
-} from './indice';
-import { buscaExata, buscaParcial } from './busca';
-
-const CAMINHO_ARQUIVO = 'dados.bin';
-const CAMINHO_INDICE = 'indice.bin';
-const N = 10000000; // 10 milhões conforme enunciado
-const LOTE = 10000;
-const RESET_ARQUIVO = false;
+} from './core/indice';
+import { buscaExata, buscaParcial } from './core/busca';
 
 function resetArquivo(caminho: string): void {
   if (fs.existsSync(caminho)) {
@@ -34,20 +30,19 @@ async function main() {
 
   // 1. GERAÇÃO DE DADOS NO DISCO
   if (totalRegistros(CAMINHO_ARQUIVO) === 0) {
-    console.log(`Gerando ${N} registos... Isto irá demorar bastante, tenha paciência!`);
-    const lote: { nome: string; endereco: string }[] = [];
+    console.log(`Gerando ${N_REGISTROS} registos... Isto irá demorar bastante, tenha paciência!`);
+    const lote: Registro[] = [];
 
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < N_REGISTROS; i++) {
       lote.push(gerarRegistro());
-      
-      if (lote.length === LOTE) {
+
+      if (lote.length === LOTE_TAMANHO) {
         gravarLote(CAMINHO_ARQUIVO, lote);
         lote.length = 0;
-        
-        // Log de progresso a cada 100.000 registos para não achar que travou
+
         if ((i + 1) % 100000 === 0) {
-            const percentual = percentualConcluido(i + 1, N);
-            console.log(`Progresso: ${i + 1} de ${N} registos gravados (${percentual.toFixed(1)}%).`);
+          const percentual = percentualConcluido(i + 1, N_REGISTROS);
+          console.log(`Progresso: ${i + 1} de ${N_REGISTROS} registos gravados (${percentual.toFixed(1)}%).`);
         }
       }
     }
@@ -63,7 +58,7 @@ async function main() {
     console.log(`Progresso do índice: ${lidos} de ${total} registros lidos (${percentual.toFixed(1)}%).`);
   });
 
-  const mapa = new Map<number, import('./indice').EntradaIndice>();
+  const mapa = new Map<number, EntradaIndice>();
   for (const entrada of indiceBase) {
     mapa.set(entrada.offset, entrada);
   }
@@ -71,8 +66,8 @@ async function main() {
   console.log('A preparar os índices...');
   const indicesCarregados = carregarIndicesOrdenados(CAMINHO_INDICE, mapa, indiceBase.length);
 
-  let indiceNome: import('./indice').EntradaIndice[];
-  let indiceEndereco: import('./indice').EntradaIndice[];
+  let indiceNome: EntradaIndice[];
+  let indiceEndereco: EntradaIndice[];
 
   if (indicesCarregados) {
     indiceNome = indicesCarregados.nome;
@@ -99,68 +94,5 @@ async function main() {
   }
 
   console.log(`Concluído! Índices em memória com ${indiceNome.length} entradas.`);
-
-  // 3. DEMONSTRAÇÃO DE BUSCA PARA O EXERCÍCIO
-  console.log('\n--- Demonstração de Buscas Rápidas ---');
-  
-  // Buscar no índice de Nomes
-  const resultadoNomes = buscaParcial(indiceNome, 'Maria', 'nome');
-  console.log(`\nEncontradas ${resultadoNomes.length} pessoas chamadas Maria. Exemplo das 3 primeiras:`);
-  console.log(resultadoNomes.slice(0, 3));
-
-  // Buscar no índice de Endereços
-// Buscar no índice de Endereços
-  const resultadoRuas = buscaParcial(indiceEndereco, 'Carvalho', 'endereco');
-  console.log(`\nEncontradas ${resultadoRuas.length} pessoas morando em endereços que começam com Carvalho. Exemplo das 3 primeiras:`);
-  console.log(resultadoRuas.slice(0, 3));
-
-  // Busca exata com endereços completos conhecidos
-  const enderecoExato = [
-    {
-      endereco: 'Albuquerque Alameda, 156, Breno do Norte, São Paulo, CEP: 83287-879',
-    },
-    {
-      endereco: 'Albuquerque Alameda, 1711, Davi do Descoberto, Minas Gerais, CEP: 86927-698',
-    },
-    {
-      endereco: 'Albuquerque Alameda, 2510, Costa do Norte, Amazonas, CEP: 39875-494',
-    },
-  ];
-
-  const resultadosExatos = enderecoExato.map((entrada) => {
-    const offsetEncontrado = buscaExata(indiceEndereco, entrada.endereco, 'endereco');
-    return offsetEncontrado >= 0
-      ? mapa.get(offsetEncontrado) ?? { ...entrada, offset: offsetEncontrado }
-      : { ...entrada, offset: offsetEncontrado };
-  });
-
-  console.log('\nBusca exata por endereços completos. Resultados encontrados:');
-  console.log(resultadosExatos);
-
-  // Nome exato para teste de busca exata no índice de nomes
-
-  const nomeExato = [
-    {
-      nome: 'Isabelly Braga',
-    },
-    {
-      nome: 'Lavínia Moraes',
-    },
-    {
-      nome: 'Fabrícia Silva',
-    },
-  ];
-
-  const nomesExatos = nomeExato.map((entrada) => {
-    const offsetEncontrado = buscaExata(indiceNome, entrada.nome, 'nome');
-    return offsetEncontrado >= 0
-      ? mapa.get(offsetEncontrado) ?? { ...entrada, offset: offsetEncontrado }
-      : { ...entrada, offset: offsetEncontrado };
-  });
-
-  console.log('\nBusca exata por nomes completos. Resultados encontrados:');
-  console.log(nomesExatos);
-
-}
 
 main().catch(console.error);

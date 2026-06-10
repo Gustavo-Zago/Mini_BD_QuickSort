@@ -1,8 +1,5 @@
-// src/search/busca.ts
-
-import { EntradaIndice, comparaTexto } from './indice';
-
-type CampoBusca = 'nome' | 'endereco';
+import { EntradaIndice, CampoBusca } from '../types';
+import { comparaTexto } from './indice';
 
 export function buscaExata(indice: EntradaIndice[], chave: string, campo: CampoBusca): number {
     let esquerda = 0;
@@ -10,19 +7,19 @@ export function buscaExata(indice: EntradaIndice[], chave: string, campo: CampoB
 
     while (esquerda <= direita) {
         const meio = Math.floor((esquerda + direita) / 2);
-        const valorAComparar = indice[meio][campo]; // Pega o nome ou endereço dinamicamente
-        
+        const valorAComparar = indice[meio][campo];
+
         const comparacao = comparaTexto(valorAComparar, chave);
 
         if (comparacao === 0) {
             return indice[meio].offset;
         } else if (comparacao < 0) {
-            esquerda = meio + 1; 
+            esquerda = meio + 1;
         } else {
-            direita = meio - 1; 
+            direita = meio - 1;
         }
     }
-    return -1; 
+    return -1;
 }
 
 export function buscaParcial(indice: EntradaIndice[], prefixo: string, campo: CampoBusca): EntradaIndice[] {
@@ -33,12 +30,12 @@ export function buscaParcial(indice: EntradaIndice[], prefixo: string, campo: Ca
     while (esquerda <= direita) {
         const meio = Math.floor((esquerda + direita) / 2);
         const valorAComparar = indice[meio][campo];
-        
+
         const comparacao = comparaTexto(valorAComparar.substring(0, prefixo.length), prefixo);
 
         if (comparacao === 0) {
             primeiraOcorrencia = meio;
-            direita = meio - 1; 
+            direita = meio - 1;
         } else if (comparacao < 0) {
             esquerda = meio + 1;
         } else {
@@ -55,7 +52,7 @@ export function buscaParcial(indice: EntradaIndice[], prefixo: string, campo: Ca
         if (indice[i][campo].toLowerCase().startsWith(prefixoLower)) {
             resultados.push(indice[i]);
         } else {
-            break; 
+            break;
         }
     }
 
